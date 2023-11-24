@@ -1,11 +1,11 @@
 <template>
-  <tr class="item">
+  <tr class="tr">
     <td v-for="(value, key) in diet" :key="key" align="center">
-      <span v-if="typeof value === 'number' || typeof value === 'string'">
+      <span v-if="!Array.isArray(value)">
         {{ value }}
       </span>
       <tr v-else v-for="(item, index) in value" :key="item" class="subitem">
-        <span v-if="typeof item === 'string' || typeof item === 'number'">
+        <span v-if="typeof item !== 'object'">
           {{ item }}
         </span>
         <span v-else>{{ item.start_date }} - {{ item.end_date }}</span>

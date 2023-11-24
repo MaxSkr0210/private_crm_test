@@ -1,5 +1,6 @@
 <template>
   <div class="main">
+    <filters :diets="allDiets" @filtered="filter"></filters>
     <table border="1">
       <tr>
         <th>Номер</th>
@@ -16,8 +17,8 @@
         <th @click="sort()">Статус</th>
       </tr>
       <table_row
-        v-for="diet in diets"
-        :key="diet.o_id"
+        v-for="(diet, index) in diets"
+        :key="index"
         :diet="diet"></table_row>
     </table>
   </div>
@@ -26,11 +27,13 @@
 <script>
 import data from "../data.json";
 import table_row from "@/components/table_row.vue";
+import filters from "@/components/filters.vue";
 
 export default {
   name: "App",
   data() {
     return {
+      allDiets: [],
       diets: [], // немного изменные начальные данные
       fullDiets: [], // разделенные данные по времени, те у одного объекта по одному тарифу, времени, плану
       sorted: false, // флаг для сортировки
@@ -38,11 +41,15 @@ export default {
   },
   components: {
     table_row,
+    filters,
   },
   methods: {
+    filter(data) {
+      this.diets = data;
+    },
     // фильтр массивов (временный)
     filterArray(arr, key) {
-      return arr.filter((item) => item.time.indexOf(key) >= 0);
+      return arr.filter((item) => item.status.indexOf(key) >= 0);
     },
     // функция для метода sort, сортировка по убыванию
     compareFnDesc(a, b) {
@@ -64,12 +71,12 @@ export default {
     sort() {
       if (this.sorted) {
         this.diets = this.diets.reverse();
-        console.log(this.diets);
       } else {
-        this.diets = this.fullDiets;
+        if (Array.isArray(this.diets[0].status)) {
+          this.diets = this.fullDiets;
+        }
 
         //Идет разделение массива на несколько категорий, каждая из которых в процессе сортируется и потом, полученные массивы объединяются.
-
         const begins = this.filterArray(this.diets, "Начинается через").sort(
           this.compareFnDesc
         );
@@ -108,11 +115,11 @@ export default {
         const timeDiff = Math.abs(sd - today);
         const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
         res = `Начинается через ${diffDays} дней`;
-      } else if (today > sd && ed - today === 0) {
+      } else if (today >= sd && ed - today === 0) {
         res = "Заканчивается сегодня";
-      } else if (today > sd && ed - today === 1) {
+      } else if (today >= sd && ed - today === 1) {
         res = "Заканчивается завтра";
-      } else if (today > sd && ed > today) {
+      } else if (today >= sd && ed > today) {
         const timeDiff = Math.abs(ed - today);
         const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
         res = `Заканчивается через ${diffDays} дней`;
@@ -169,10 +176,12 @@ export default {
         this.fullDiets.push(forFullDiets);
       }
     }
+
+    this.allDiets = Object.assign([], this.fullDiets);
   },
   mounted() {
     // исправление размеров ячеек таблицы (временно)
-    const trs = document.querySelectorAll(".item");
+    const trs = document.querySelectorAll(".tr");
 
     for (let i = 0; i < trs.length; i++) {
       const childrens = trs[i].children;
