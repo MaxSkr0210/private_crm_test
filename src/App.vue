@@ -14,7 +14,7 @@
         <th>Оплата</th>
         <th>Курьеру</th>
         <th>Примечание</th>
-        <th @click="sort()">Статус</th>
+        <th @click="sort('status')">Статус</th>
       </tr>
       <table_row
         v-for="(diet, index) in diets"
@@ -33,7 +33,7 @@ export default {
   name: "App",
   data() {
     return {
-      allDiets: [],
+      allDiets: [], // немного изменные начальные данные для фильтрации
       diets: [], // немного изменные начальные данные
       fullDiets: [], // разделенные данные по времени, те у одного объекта по одному тарифу, времени, плану
       sorted: false, // флаг для сортировки
@@ -47,9 +47,12 @@ export default {
     filter(data) {
       this.diets = data;
     },
-    // фильтр массивов (временный)
-    filterArray(arr, key) {
-      return arr.filter((item) => item.status.indexOf(key) >= 0);
+    // фильтр массивов
+    filterArray(arr, key, value) {
+      return arr.filter((item) => {
+        console.log(item[key]);
+        return item[key].includes(value);
+      });
     },
     // функция для метода sort, сортировка по убыванию
     compareFnDesc(a, b) {
@@ -68,40 +71,51 @@ export default {
       return 0;
     },
     //сортировка диет
-    sort() {
+    sort(key) {
       if (this.sorted) {
         this.diets = this.diets.reverse();
-      } else {
-        if (Array.isArray(this.diets[0].status)) {
-          this.diets = this.fullDiets;
-        }
-
-        //Идет разделение массива на несколько категорий, каждая из которых в процессе сортируется и потом, полученные массивы объединяются.
-        const begins = this.filterArray(this.diets, "Начинается через").sort(
-          this.compareFnDesc
-        );
-        const endsToday = this.filterArray(this.diets, "Заканчивается сегодня");
-        const endsTomorrow = this.filterArray(
-          this.diets,
-          "Заканчивается завтра"
-        );
-        const endsSoon = this.filterArray(
-          this.diets,
-          "Заканчивается через"
-        ).sort(this.compareFnDAbs);
-        const alreadyEnds = this.filterArray(this.diets, "Закончилось").sort(
-          this.compareFnDAbs
-        );
-        this.diets = [
-          ...begins,
-          ...endsToday,
-          ...endsTomorrow,
-          ...endsSoon,
-          ...alreadyEnds,
-        ];
-
-        this.sorted = true;
+        return;
       }
+      if (Array.isArray(this.diets[0][key])) {
+        this.diets = this.fullDiets;
+      }
+
+      //Идет разделение массива на несколько категорий, каждая из которых в процессе сортируется и потом, полученные массивы объединяются.
+      const begins = this.filterArray(this.diets, key, "Начинается через").sort(
+        this.compareFnDesc
+      );
+      const endsToday = this.filterArray(
+        this.diets,
+        key,
+        "Заканчивается сегодня"
+      );
+      const endsTomorrow = this.filterArray(
+        this.diets,
+        key,
+        "Заканчивается завтра"
+      );
+      const endsSoon = this.filterArray(
+        this.diets,
+        key,
+        "Заканчивается через"
+      ).sort(this.compareFnDAbs);
+      const alreadyEnds = this.filterArray(this.diets, key, "Закончилось").sort(
+        this.compareFnDAbs
+      );
+      this.diets = [
+        ...begins,
+        ...endsToday,
+        ...endsTomorrow,
+        ...endsSoon,
+        ...alreadyEnds,
+      ];
+
+      this.sorted = true;
+    },
+
+    countDays(d1, d2) {
+      const timeDiff = d1 - d2;
+      return Math.ceil(timeDiff / (1000 * 3600 * 24));
     },
 
     // Формирование столбца Статус
@@ -112,20 +126,15 @@ export default {
       let res = "";
 
       if (today < sd) {
-        const timeDiff = Math.abs(sd - today);
-        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const diffDays = this.countDays(sd, today);
         res = `Начинается через ${diffDays} дней`;
-      } else if (today >= sd && ed - today === 0) {
-        res = "Заканчивается сегодня";
-      } else if (today >= sd && ed - today === 1) {
-        res = "Заканчивается завтра";
       } else if (today >= sd && ed > today) {
-        const timeDiff = Math.abs(ed - today);
-        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        res = `Заканчивается через ${diffDays} дней`;
+        const diffDays = this.countDays(ed, today);
+        if (diffDays === 0) res = "Заканчивается сегодня";
+        if (diffDays === 1) res = "Заканчивается завтра";
+        else res = `Заканчивается через ${diffDays} дней`;
       } else if (ed < today) {
-        const timeDiff = Math.abs(today - ed);
-        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const diffDays = this.countDays(today, ed);
         res = `Закончилось ${diffDays} дней назад`;
       }
 

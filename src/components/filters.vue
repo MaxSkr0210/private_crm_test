@@ -85,22 +85,12 @@ export default {
         if (res.length === 0) {
           for (let value of this.filter[key]) {
             res.push(
-              ...this.allDiets.filter((item) => {
-                if (Array.isArray(item[key])) {
-                  return item[key][0].indexOf(value) >= 0;
-                }
-                return item[key].indexOf(value) >= 0;
-              })
+              ...this.allDiets.filter((item) => item[key].includes(value))
             );
           }
         } else {
           for (let value of this.filter[key]) {
-            res = res.filter((item) => {
-              if (Array.isArray(item[key])) {
-                return item[key][0].indexOf(value) >= 0;
-              }
-              return item[key].indexOf(value) >= 0;
-            });
+            res = res.filter((item) => item[key].includes(value));
           }
         }
       }
